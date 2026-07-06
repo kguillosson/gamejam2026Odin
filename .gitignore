@@ -1,0 +1,16 @@
+# Build output
+build/
+*.exe
+*.out
+*.o
+
+# Sublime Text
+*.sublime-workspace
+*.sublime-project
+
+# OS junk
+.DS_Store
+Thumbs.db
+
+# Logs / temp
+*.log
