@@ -10,3 +10,5 @@ DrawThing_GP_TXTR::proc(texture :rl.Texture2D, pos:gridPos){
     origRect:=rl.Rectangle{0,0, 32, 32}
     rl.DrawTexturePro(texture, origRect, destRect, rl.Vector2{32,32}, 0, rl.WHITE)
 }
+
+
