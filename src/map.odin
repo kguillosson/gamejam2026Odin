@@ -2,7 +2,8 @@ package main
 
 import rl "vendor:raylib/V6"
 import "core:fmt"
-
+import "core:math/rand"
+import "core:math"
 W:f32:48                //width of a hex tile
 S:f32:26                //side of a hex tile
 
@@ -156,12 +157,12 @@ HiglightHex::proc(center:rl.Vector2, color:rl.Color, scale:f32=1){
 
 
 
-IsTileFree::proc(entity_array :[dynamic;max_nb_wiz]entity, pos : gridPos) ->bool{
+IsTileFree::proc(entity_array :[dynamic;max_nb_entity]entity, pos : gridPos) ->bool{
     for thing in entity_array do if pos ==GetPos(thing) do return false
     return true
 }
 
-IsTileOccupied::proc(entity_array :[dynamic;max_nb_wiz]entity, pos : gridPos) ->(bool, u8){
+IsTileOccupied::proc(entity_array :[dynamic;max_nb_entity]entity, pos : gridPos) ->(bool, u8){
     for thing, index in entity_array do if pos ==GetPos(thing) do return true, u8(index)
     return false, 0
 }
@@ -172,7 +173,7 @@ IsHighlighted::proc(highligted_tiles :[dynamic; max_nb_highlight]gridPos, pos:gr
 }
 
 HighlightAccessible :: proc(highligted_tiles:^[dynamic; max_nb_highlight]gridPos,
-                            entity_array    :[dynamic; max_nb_highlight]entity,
+                            entity_array    :[dynamic; max_nb_entity]entity,
                             target_tile     :gridPos){
     for dir in neigbors{
         pos2try:=GetNeigbor(target_tile, dir)
@@ -181,4 +182,50 @@ HighlightAccessible :: proc(highligted_tiles:^[dynamic; max_nb_highlight]gridPos
             else do fmt.println("too many highlighted tiles")
         }
     }
+}
+
+SetupMap :: proc(tile_array: ^[nb_tiles]tileTypes){
+    idx:=0
+    
+    for row:=0; row<nb_row; row+=1{
+        for col:=0; col<nb_col; col+=1{
+            if col==14{
+                tile_array[idx] = .eau
+            }else if col==13{
+                if rand.uint32()%2==0 do tile_array[idx] = .eau
+                else do tile_array[idx] = .plage
+            }else if col==12{
+                tile_array[idx]=.plage
+            }else if col<2{
+                tile_array[idx]=float2class({0,0.1,0,0.45,0.45})
+            }else if col<4{
+                tile_array[idx]=float2class({0.1,0.2,0.1,0.3,0.3})
+            }else if col<7{
+                tile_array[idx]=float2class({0.2,0.2,0.2,0.2,0.2})
+            }else if col<9{
+                tile_array[idx]=float2class({0.3,0.3,0.2,0.1,0.1})
+            }else if col<12{
+                tile_array[idx]=float2class({0.4,0.2,0.4,0,0})
+            }
+
+            idx+=1
+        }
+    }
+}
+
+float2class :: proc(probas :[5]f32)->(output:tileTypes){
+    sum:f32=0
+    for proba in probas do sum+= proba
+    if math.abs(sum-1)>1e-5 {
+        fmt.println("probas didn't sum to 1")
+        return .eau
+    }
+    classes :=[5]tileTypes{.foret, .montagne, .prairie, .desert, .swamp}
+    val:=rand.float32()
+    idx:=0
+    for ; idx<5 && val>probas[idx]; idx+=1 do val-=probas[idx]
+    return classes[idx]
+
+
+
 }

@@ -7,6 +7,15 @@ import "core:math/rand"
 import bt "buttons"
 
 //enums and flags
+difficulty :: enum u8{
+	easy,//one enemy every three turns, +1for every 20 turns
+	medium,//one enemy every 2 turns, +1for every 15 turns
+	hard,//one per turn, +1 for every 5 turns
+	insane//one per turn, 1+ for every turn
+}
+
+
+
 flagsEnum :: enum {
 	can_spawn,
 	selection2spawn,
@@ -17,10 +26,11 @@ state :: bit_set[flagsEnum]
 
 //consts
 nb_tiles 			:: 240
-max_nb_wiz 			::32
+max_nb_entity 			::128
 max_nb_highlight 	::32
-home_pos :: gridPos{7,8}
-
+home_pos :: gridPos{11,8}
+nb_row::16
+nb_col::15
 
 
 main :: proc(){
@@ -32,7 +42,7 @@ main :: proc(){
 	//arrays
 	array_tiles:[nb_tiles]tileTypes
 	tiles2Highlight:[dynamic;max_nb_highlight]gridPos
-	array_entity:[dynamic;max_nb_wiz]entity
+	array_entity:[dynamic;max_nb_entity]entity
 	//buttons
 	/*button_next_turn := bt.InitButton(rl.Vector2{100, 670}, "Next Turn", rl.RED, rl.BLACK)
 	button_spawn_wizard:= bt.InitButton(rl.Vector2{300, 670}, "Spawn Wizard", rl.RED, rl.BLACK)*/
@@ -46,8 +56,10 @@ main :: proc(){
 	}
 	
 
-	framecounter :u32
+	framecounter :i32
+	turncounter:i32
 	game_state :=state{.can_spawn}
+	game_difficulty :difficulty=.hard
 	
 	selected_entity_idx:u8
 
@@ -64,8 +76,8 @@ main :: proc(){
 	ENTITY_ATLAS := rl.LoadTexture("./art/entity_atlas.png")
 	BUTTON_ATLAS :=rl.LoadTexture("./art/button_atlas.png")
 	//setup map
-
-	for idx:=0; idx<nb_tiles; idx+=1 do array_tiles[idx] = tileTypes(rand.uint32()%7)
+	SetupMap(&array_tiles)
+	append(&array_entity, entity(building{home_pos, 100, .castle}))
 
 
 
@@ -85,11 +97,21 @@ main :: proc(){
 						wiz.actions = 2
 						e = wiz
 					}
-					
 				}
 				//run the enemy logic
+				//moving
+				
+				
+
+				//spawning
+				SpawnEnemies(&array_entity, game_difficulty, turncounter)
+				
+
+
+
+				turncounter+=1
 			}
-			if bt.IsMouseOnButton(button_spawn_wizard) && .can_spawn in game_state && len(array_entity)<max_nb_wiz{
+			if bt.IsMouseOnButton(button_spawn_wizard) && .can_spawn in game_state && len(array_entity)<max_nb_entity{
 				clear(&tiles2Highlight)
 				HighlightAccessible(&tiles2Highlight, array_entity, home_pos)
 				game_state +={.spawning}
@@ -105,7 +127,7 @@ main :: proc(){
 			//click on highlighted tile
 			if !IsHighlighted(tiles2Highlight, hovered_hex) do break M1_INTERACTION // => we clicked on a highlighted tile
 			
-			if .spawning in game_state && len(array_entity)<max_nb_wiz{
+			if .spawning in game_state && len(array_entity)<max_nb_entity{
 				append(&array_entity, initWiz(hovered_hex, wizType(rand.uint32()%5)))
 				game_state-={.spawning, .can_spawn}
 				clear(&tiles2Highlight)
@@ -118,7 +140,7 @@ main :: proc(){
 				array_entity[selected_entity_idx] = movable
 				clear(&tiles2Highlight)
 				game_state-={.selected}
-				fmt.println(movable, GetAP(array_entity[selected_entity_idx]))
+				//fmt.println(movable, GetAP(array_entity[selected_entity_idx]))
 			}
 
 
@@ -133,7 +155,6 @@ main :: proc(){
 			HiglightHex(mouseGP, rl.YELLOW)
 			for tile in tiles2Highlight do HiglightHex(GetCenterGP(tile), rl.RED)
 			//drawing things
-			DrawThing_GP_TXTR(house_texture, home_pos)
 			for entity in array_entity do DrawEntity(entity, ENTITY_ATLAS)
 			
 			//drawing HUD
