@@ -8,6 +8,8 @@ S:f32:26                //side of a hex tile
 
 gridPos :: [2]i32
 
+
+
 corners ::enum{
     t   =0,
     tr  =1,
@@ -33,6 +35,8 @@ neigbors :: enum{
     l   =4,
     lt  =5,
 }
+
+
 @(rodata) neigbor_disp_even :=[neigbors]gridPos{
     .rt  ={0,-1},
     .r   ={1,0},
@@ -147,4 +151,34 @@ HiglightHex::proc(center:rl.Vector2, color:rl.Color, scale:f32=1){
     color:=color
     color.a = 100
     rl.DrawPoly(center, 6, S*scale, 90, color)
+}
+
+
+
+
+IsTileFree::proc(entity_array :[dynamic;max_nb_wiz]entity, pos : gridPos) ->bool{
+    for thing in entity_array do if pos ==GetPos(thing) do return false
+    return true
+}
+
+IsTileOccupied::proc(entity_array :[dynamic;max_nb_wiz]entity, pos : gridPos) ->(bool, u8){
+    for thing, index in entity_array do if pos ==GetPos(thing) do return true, u8(index)
+    return false, 0
+}
+
+IsHighlighted::proc(highligted_tiles :[dynamic; max_nb_highlight]gridPos, pos:gridPos)->bool{
+    for tile in highligted_tiles do if pos == tile do return true
+    return false
+}
+
+HighlightAccessible :: proc(highligted_tiles:^[dynamic; max_nb_highlight]gridPos,
+                            entity_array    :[dynamic; max_nb_highlight]entity,
+                            target_tile     :gridPos){
+    for dir in neigbors{
+        pos2try:=GetNeigbor(target_tile, dir)
+        if IsTileFree(entity_array, pos2try){
+            if len(highligted_tiles)<max_nb_highlight do append(highligted_tiles, pos2try)
+            else do fmt.println("too many highlighted tiles")
+        }
+    }
 }
